@@ -49,8 +49,7 @@ def plot_graham(konvex, points, step):
     plt.xlabel("X-Wert")
     plt.ylabel("Y-Wert")
     plt.legend()
-    plt.pause(0.5)  # Kurze Pause, um die Änderung zu visualisieren
-
+    plt.pause(0.5)
 # Hauptprogramm
 test_values = [
     [7, 3],
