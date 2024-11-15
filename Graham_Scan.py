@@ -1,57 +1,59 @@
-import numpy
-import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
-def get_lowest_y(li):
-    # Überprüfen, ob die Liste leer ist
-    if not li:
-        return None  # Gibt None zurück, wenn die Liste leer ist
-
-    # Initialisiere die Variable für den kleinsten Y-Wert
-    kleinster_y_wert = li[0][1]
-    x_wert = li[0][0]
-
-    # Gehe durch jeden Eintrag in der Liste
-    for x, y in li:
-        # Überprüfe, ob der aktuelle Y-Wert kleiner ist oder bei Gleichheit der X-Wert kleiner ist
-        if y < kleinster_y_wert or (y == kleinster_y_wert and x < x_wert):
-            kleinster_y_wert = y
-            x_wert = x
-
-    return x_wert, kleinster_y_wert
-
-def get_angle(start_x, start_y, x, y):
-    # Berechne den Winkel
-    angle = numpy.degrees(numpy.arctan2(y - start_y, x - start_x))
-    if angle < 0:
-        angle += 360  # Winkel von 0 bis 360 Grad
-    return angle
-
-def cross_product(o, a, b):
-    # Berechne das Kreuzprodukt von OA und OB
-    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
-def plot_graham(konvex, points, step):
-    plt.cla()  # Lösche die Achsen anstatt ein neues Fenster zu öffnen
+# Graham Scan Algorithm
+def getMinimum(list):
+    if not list:
+        return None  # Returns none for an empty list
     
-    # Zeichne alle Punkte
+    # Initialize variable for the minimal Y-value
+    min_yValue = list[0][1]
+    xValue = list[0][0]
+
+    for x, y in list:
+        # Find the minimal y value (or, if multiple values are equal, the one with the lowest x value)
+        if y < min_yValue or (y == min_yValue and x < xValue):
+            min_yValue = y
+            xValue = x
+
+    #Return the coordinates of the minimal point
+    return xValue, min_yValue
+
+def getAngle(initial_x, initial_y, x, y):
+    # Calculate angle
+    angle = np.degrees(np.arctan2(y - initial_y, x - initial_x))
+    
+    if angle < 0:
+        angle += 360  # Convert angle to a value between 0 and 360°
+    return angle
+    
+def getOrientation(p1, p2, p3):
+    # Calculate the orientation of 3 points per step
+    return (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])
+
+def plotGrahamScan(convex, points, step):
+    plt.cla()  # Delete the axes
+    
+    # Plot all points for the graham scan
     xs, ys = zip(*[(p[0], p[1]) for p in points])
-    plt.scatter(xs, ys, color='blue', label='Punkte')
+    plt.scatter(xs, ys, color='blue', label='points')
 
-    # Zeichne die aktuelle Konvex-Hülle
-    if len(konvex) > 1:
-        konvex_xs, konvex_ys = zip(*konvex)
-        plt.plot(konvex_xs, konvex_ys, 'r-', lw=2, label='Aktuelle Kovex-Hülle')
-        # Hülle schließen
-        plt.plot([konvex[-1][0], konvex[0][0]], [konvex[-1][1], konvex[0][1]], 'r-', lw=2)
+    # Plot the current convex shell
+    if len(convex) > 1:
+        convex_xs, convex_ys = zip(*convex)
+        plt.plot(convex_xs, convex_ys, 'r-', lw=2, label='current convex shell')
+        
+        # Close the shell
+        plt.plot([convex[-1][0], convex[0][0]], [convex[-1][1], convex[0][1]], 'r-', lw=2)
 
-    plt.title(f"Graham Scan - Schritt {step}")
-    plt.xlabel("X-Wert")
-    plt.ylabel("Y-Wert")
+    plt.title(f"Graham Scan - step {step}")
+    plt.xlabel("x [m]")
+    plt.ylabel("y [m]")
     plt.legend()
-    plt.pause(0.5)
-# Hauptprogramm
-test_values = [
+    plt.pause(1.0)
+
+# Main program
+points = [
     [7, 3],
     [8, 7],
     [4, 8],
@@ -64,43 +66,43 @@ test_values = [
     [2, 1]
 ]
 
-# Finde den Startpunkt
-start_x, start_y = get_lowest_y(test_values)
+# Find the initial point of the graham scan
+initial_x, initial_y = getMinimum(points)
 
-# Berechne den Winkel für jeden Punkt
-for point in test_values:
-    angle = get_angle(start_x, start_y, point[0], point[1])
-    point.append(angle)  # Füge den berechneten Winkel zum Punkt hinzu
+# Calculate the angles for all points
+for point in points:
+    angle = getAngle(initial_x, initial_y, point[0], point[1])
+    point.append(angle)  # Add the angles to the corresponding points
 
-# Entferne den Startpunkt aus der Liste
-test_values_without_start = [point for point in test_values if not (point[0] == start_x and point[1] == start_y)]
+# Delete the initial point from the list
+pointsWithoutInitial = [point for point in points if not (point[0] == initial_x and point[1] == initial_y)]
 
-# Sortiere die Liste nach dem Winkel
-test_values_sorted = sorted(test_values_without_start, key=lambda point: point[2])
+# Sort the list regarding ascending angles
+pointsSorted = sorted(pointsWithoutInitial, key=lambda point: point[2])
 
-# Füge den Startpunkt am Anfang der sortierten Liste hinzu
-test_values_sorted.insert(0, [start_x, start_y, 0])
+# Add initial point to the sorted list
+pointsSorted.insert(0, [initial_x, initial_y, 0])
 
-# Initialisiere den Plot und die Liste für die Konvex-Hülle
+# Initialize plot
 plt.figure(figsize=(10, 6))
-konvex = [[start_x, start_y]]
+convex = [[initial_x, initial_y]]
 step = 1
 
-# Graham-Scan-Algorithmus
-for point in test_values_sorted[1:]:
-    konvex.append([point[0], point[1]])  # Füge den Punkt zur Konvex Hülle hinzu
-    plot_graham(konvex, test_values, step)
+# Graham Scan algorithm
+for point in pointsSorted[1:]:
+    convex.append([point[0], point[1]])  # Add point to the convex shell
+    plotGrahamScan(convex, points, step)
     step += 1
 
-    # Prüfe, ob die letzten drei Punkte eine Rechtsdrehung bilden
-    while len(konvex) >= 3 and cross_product(konvex[-3], konvex[-2], konvex[-1]) <= 0:
-        del konvex[-2]  # Entferne den vorletzten Punkt
-        plot_graham(konvex, test_values, step)
+    # Check the orientation of the last 3 points
+    while len(convex) >= 3 and getOrientation(convex[-3], convex[-2], convex[-1]) <= 0:
+        del convex[-2]  # Delete the second last point
+        plotGrahamScan(convex, points, step)
         step += 1
 
-# Füge den Startpunkt am Ende hinzu, um die Hülle zu schließen
-konvex.append(konvex[0])
+# Add initial point
+convex.append(convex[0])
 
-# Abschließende Visualisierung der konvexen Hülle
-plot_graham(konvex, test_values, step)
-plt.show()  # Zeige die finale Hülle an
+# Final visualization
+plotGrahamScan(convex, points, step)
+plt.show()
